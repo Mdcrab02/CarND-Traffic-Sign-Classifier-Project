@@ -16,7 +16,7 @@ For this project, I initially started to use base TensorFlow for the model archi
 of the convolutional neural net design, but decided to use Keras to wrap TensorFlow.  Not
 only is Keras faster for me to code, it is also much simpler for me to debug when I run
 into problems.  However, I still spend a long time looking at the API reference docs
-for Keras when things went awry.
+for Keras when things went awry.  I will continue to improve this model as I learn.
 
 ---
 
@@ -141,7 +141,7 @@ My final model consisted of the following layers:
 | Dense(128)				| Regular densely-connected layer, 128 units        									|
 |	Activation					|	Sigmoid activation											|
 |	Dense(43)					|	Regular densely-connected layer, 43 units											|
-|	Activation					|	Final activation - softmax regression											|
+|	Activation					|	Final activation - Softmax regression											|
 
 
 ####3. Describe how you trained your model. The discussion can include the type of optimizer, the batch size, number of epochs and any hyperparameters such as learning rate.
@@ -159,8 +159,6 @@ have done the one-hot encoding, but using scikit is easier.
 
 I limited the training to 3 epochs for time, because I was not able to use my GPU.  Were I
 able to use my GPU as planned, I would have trained on 100 epochs.
-
-My current model overfits anyway, so I left the number of epochs at 3 until I resolve the overfitting.
 
 ####4. Describe the approach taken for finding a solution and getting the validation set accuracy to be at least 0.93. Include in the discussion the results on the training, validation and test sets and where in the code these were calculated. Your approach may have been an iterative process, in which case, outline the steps you took to get to the final solution and why you chose those steps. Perhaps your solution involved an already well known implementation or architecture. In this case, discuss why you think the architecture is suitable for the current problem.
 
