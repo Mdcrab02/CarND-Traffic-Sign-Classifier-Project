@@ -16,7 +16,9 @@ For this project, I initially started to use base TensorFlow for the model archi
 of the convolutional neural net design, but decided to use Keras to wrap TensorFlow.  Not
 only is Keras faster for me to code, it is also much simpler for me to debug when I run
 into problems.  However, I still spend a long time looking at the API reference docs
-for Keras when things went awry.  I will continue to improve this model as I learn.
+for Keras when things went awry.
+
+Currently the model has an accuracy of 87% on the training set, and an accuracy of 95% on the validation set.
 
 ---
 
@@ -45,9 +47,8 @@ You're reading it! Here is a link to my [project code](https://github.com/mdcrab
 I used the numpy library to calculate summary statistics of the traffic
 signs data set:
 
-* The size of training set is: 34,799
-* The size of the validation set is: 4,410
-* The size of test set is: 12,630
+* The size of the new training set is: 47,429
+* The portion of the training set used for validation is: 20%
 * The shape of a traffic sign image is: 32 x 32 x 3
 * The number of unique classes/labels in the data set is: 43
 
@@ -79,50 +80,28 @@ looking signs as the data set contains signs from Germany.
 
 So, the images in the data sets are interesting, to say the least.  Many of the images
 in the data sets are very blurry or very dark.  Even for human eyes, interpreting them
-is difficult.  I tried several different methods for preprocessing the images, but
-ran into a lot of difficulty doing so.  For example, when I tried to convert the images
-to grayscale (for further processing), they always ended up being teal and yellow.
+is difficult.  When I tried to convert the images to grayscale (for further processing), they always ended up being teal and yellow.
 
-I was able to successfuly process the images from RGB into YUV, but the results were that
+I was able to successfully process the images from RGB into YUV, but the results were that
 the model's performance was really poor.
 
-Eventually, I gave up for the sake of time and decided to teach the model from the raw
-images in the data set.  In the future I would like to figure out how to better process
-these images.
+I wanted to convert the images into grayscale and use the adaptive histogram method to equalize them, but could not get anything to convert them to grayscale.  Errors.  Errors everywhere.
 
-After reading the description for this section, I presume that some are generating more data
-for training.  While this was not covered in the lecture material, I believe I know how
-this could be implemented for future iterations of the process.
+To generate more data I combined the training and test sets into one large training set.
 
 ### Designing the Model
 
-I designed the model in Keras based off some of the model architectures covered in class
-using base TensorFlow.
+I designed the model in Keras based off some of the model architectures developed by Google.
 
-The model begins with a convolutional layer that uses max pooling and dropout prior to
-reaching the first activation node.  While most of the class has used 'Relu' activation
-functions, I achieved better results from the sigmoid transfer function.  I then added a
-flatted layer before passing the outputs into a dense node of size 128 to match the batch
-size.  Once again, this goes into a sigmoid activation layer.  Then I added another
+The model begins with two convolutional layers that use max pooling, batch normalization, and a 'relu' activation.  I started with relu, then went to sigmoid, and then back to relu.  I then added a flatted layer before passing the outputs into dense nodes with 128, 256, and 128 units respectively.  All used dropout and a relu activation.  Then I added another
 layer with Dense() for the final layer associated with the number of classes before
-passing the output to a softmax regression activation layer.
+passing the output to a softmax regression activation layer to get my logits.
 
 ### Performance Improvements
 
-I have CUDA and TensorFlow-GPU set up on my maching to utilize the CUDA cores in my
-GTX 960, but I was unable to get the environment for term1 to use 'gpu:0'.  This
-prevented me from increasing the number of epochs to train the model up to 100.  My
-other environments can use my GPU just fine, but if I do that for this project the code
-breaks.
+In addition to my model architecture changes, I also added some Keras code to stop training the model once it reached an acceptable minimum validation loss after sets of 2 epochs.
 
-Specifically, 'tf.python.control_flow_ops = tf' does not work with the new versions
-of Keras and/or Tensorflow.  I could not find out why.
-
-In the future I would like to give the model more training examples and merge the
-validation pickle into one pickle with the training data, because I can split off
-the validation with Keras in the model.fit.  Unfortunately, I could not figure out how
-to combine these pickles.  I wish we were just given a training and test set.
-
+The model could be improved further with more images and by making it deeper.  However, I think 87% training accuracy and 95% validation accuracy is pretty damn good.
 
 ####2. Describe what your final model architecture looks like including model type, layers, layer sizes, connectivity, etc.) Consider including a diagram and/or table describing the final model.
 
@@ -134,12 +113,23 @@ My final model consisted of the following layers:
 |:---------------------:|:---------------------------------------------:|
 | Input         		| 32x32x3 RGB image   							|
 | Convolution (32x3x3)     	| Convolutional layer 	|
+| Activation	    | ReLu activation      									|
 | Max Pooling (2,2)					|	2x2 Max Pooling Layer											|
-| Dropout      	| 50% chance for dropout 				|
-| Activation	    | Sigmoid activation      									|
-| Flatten		| Flatten the input        									|
+| Normalization					|	Batch Normalization Layer											|
+| Convolution (64x3x3)     	| Convolutional layer 	|
+| Activation	    | ReLu activation      									|
+| Normalization					|	Batch Normalization Layer											|
+| Max Pooling (2,2)					|	2x2 Max Pooling Layer											|
+| Flatten		| Flatten Layer        									|
 | Dense(128)				| Regular densely-connected layer, 128 units        									|
-|	Activation					|	Sigmoid activation											|
+|	Activation					|	ReLu activation											|
+| Dropout      	| 50% chance for dropout 				|
+| Dense(256)				| Regular densely-connected layer, 256 units        									|
+|	Activation					|	ReLu activation											|
+| Dropout      	| 50% chance for dropout 				|
+| Dense(128)				| Regular densely-connected layer, 128 units        									|
+|	Activation					|	ReLu activation											|
+| Dropout      	| 50% chance for dropout 				|
 |	Dense(43)					|	Regular densely-connected layer, 43 units											|
 |	Activation					|	Final activation - Softmax regression											|
 
@@ -157,8 +147,7 @@ The model fit used the raw images (see preprocessing problems above), and a one-
 vector generated using scikit-learn's LabelBinarizer().  There are a few different ways I could
 have done the one-hot encoding, but using scikit is easier.
 
-I limited the training to 3 epochs for time, because I was not able to use my GPU.  Were I
-able to use my GPU as planned, I would have trained on 100 epochs.
+After setting the parameters for my callbacks in Keras, the training stopped at 4 epochs because the validation loss had ceased to have a smooth curve down to the minimum after 2 epochs.  It went down, then up, then down again.
 
 ####4. Describe the approach taken for finding a solution and getting the validation set accuracy to be at least 0.93. Include in the discussion the results on the training, validation and test sets and where in the code these were calculated. Your approach may have been an iterative process, in which case, outline the steps you took to get to the final solution and why you chose those steps. Perhaps your solution involved an already well known implementation or architecture. In this case, discuss why you think the architecture is suitable for the current problem.
 
@@ -166,14 +155,8 @@ able to use my GPU as planned, I would have trained on 100 epochs.
 
 My final model results were:
 
-* training set accuracy of: 80%
-* validation set accuracy of: 19%
-* test set accuracy of: 80%
-
-These numbers are from the first run of 10 epochs from the model.  After that, I noticed
-that the rubric wanted us to get to 93% validation accuracy.  When I ran the code again
-the validation accuracy did not get anywhere near that high.  It looks as though it varies
-wildly each time the code is run.
+* training set accuracy of: 87%
+* validation set accuracy of: 95%
 
 If an iterative approach was chosen:
 
@@ -185,14 +168,11 @@ If an iterative approach was chosen:
 * What were some problems with the initial architecture?
 
   The code quickly became a bit of a mess, and the performance was really bad.  The accuracy
-  started out around 0.05%.
+  started out around 0.05%.  The validation accuracy also hovered around 0%.
 
 * How was the architecture adjusted and why was it adjusted? Typical adjustments could include choosing a different model architecture, adding or taking away layers (pooling, dropout, convolution, etc), using an activation function or changing the activation function. One common justification for adjusting an architecture would be due to overfitting or underfitting. A high accuracy on the training set but low accuracy on the validation set indicates over fitting; a low accuracy on both sets indicates under fitting.
 
-  At first the model was very underfit.  The accuracy was really low, and I believe the
-  cuplrit was the image processing.  I was not able to improve the performance by changing
-  the image processing, so I played around with the structure of the model until the
-  performance reached acceptable levels
+  At first the model was very underfit.  While image processing could help, the main issues were that the model was not deep enough and it did not have enough images to learn from.
 
 * Which parameters were tuned? How were they adjusted and why?
 
@@ -200,8 +180,7 @@ If an iterative approach was chosen:
 
 * What are some of the important design choices and why were they chosen? For example, why might a convolution layer work well with this problem? How might a dropout layer help with creating a successful model?
 
-  I used both a convolutional layer and dropout.  I figured dropout would help prevent
-  overfitting, but the model ended up overfitting anyway.
+  Convolutional layers help scan over the images in layers based on the number of convolutions, kernel size, and stride.  Using two of these helped my model deal with the complex color images.  Dropout on my dense layers also regularized them to mitigate overfitting issues.
 
 ### Test a Model on New Images
 
@@ -212,11 +191,9 @@ Here are five German traffic signs that I found on the web:
 ![alt text][image4] ![alt text][image5] ![alt text][image6]
 ![alt text][image7] ![alt text][image8]
 
-I Google searched for German traffic signs, but I suspect some of them are not German.
+I Google searched for German traffic signs based on the sign names (labels) from the data sets.
 
-The blurriness, contrast, and light level in the images make them difficult to classify.  This
-is especially true given that I could not get the image processing to cooperate.  I chose
-some example images that did not require heavy preprocessing.
+After wading through a sea of images covered with watermarks, I finally found some to use for testing.  What kind of person takes a camera to a publicly funded and publicly displayed traffic sign, and slaps a watermark on it before putting it on the internet for people to use?  It's a traffic sign.
 
 ####2. Discuss the model's predictions on these new traffic signs and compare the results to predicting on the test set. At a minimum, discuss what the predictions were, the accuracy on these new predictions, and compare the accuracy to the accuracy on the test set (OPTIONAL: Discuss the results in more detail as described in the "Stand Out Suggestions" part of the rubric).
 
@@ -225,14 +202,13 @@ Here are the results of the prediction:
 | Image			        |     Prediction	        					|
 |:---------------------:|:---------------------------------------------:|
 | Stop      		| Stop   									|
-| Roundabout mandatory     			| Roundabout mandatory 										|
-| Parking?					| Roundabout mandatory											|
-| Children crossing	      		| Children Crossing					 				|
+| Roundabout mandatory     			| Keep right 										|
+| No entry					| No entry											|
+| Road work	      		| Road work					 				|
 | Right turn ahead			| Right turn ahead     							|
 
 
-The model was able to correctly guess 4 of the 5 traffic signs, which gives an accuracy of 80%.  This performance is much better than the validation accuracy.  It seems the model still requires
-more improvements.
+The model was able to correctly guess 4 of the 5 traffic signs, which gives an accuracy of 80%.
 
 ####3. Describe how certain the model is when predicting on each of the five new images by looking at the softmax probabilities for each prediction. Provide the top 5 softmax probabilities for each image along with the sign type of each probability. (OPTIONAL: as described in the "Stand Out Suggestions" part of the rubric, visualizations can also be provided such as bar charts)
 
